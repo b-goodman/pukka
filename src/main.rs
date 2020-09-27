@@ -1,13 +1,8 @@
-use cursive::views::{Button, Checkbox, Dialog, LinearLayout, TextArea, TextView};
+use cursive::views::{Button, Checkbox, Dialog, LinearLayout, TextContent, TextView};
 use cursive::Cursive;
 use std::collections::HashMap;
 
-// Include Symbols:( e.g. @#$% )
-// Include Numbers:( e.g. 123456 )
-// Include Lowercase Characters:( e.g. abcdefgh )
-// Include Uppercase Characters:( e.g. ABCDEFGH )
-// Exclude Similar Characters:( e.g. i, l, 1, L, o, 0, O )
-// Exclude Ambiguous Characters:( { } [ ] ( ) / \ ' " ` ~ , ; : . < > )
+mod password;
 
 fn main() {
     let mut siv = cursive::default();
@@ -26,6 +21,9 @@ fn main() {
 
     siv.set_user_data::<HashMap<&str, bool>>(options_state.clone());
 
+    // TODO - default width, replace with multiline
+    let password_result_field = TextContent::new("");
+
     fn handle_check(key: &'static str) -> Box<dyn Fn(&mut Cursive, bool)> {
         Box::new(move |cursive: &mut Cursive, state: bool| -> () {
             cursive.with_user_data(|data: &mut HashMap<&str, bool>| -> () {
@@ -33,6 +31,17 @@ fn main() {
             });
         })
     };
+
+    // TODO - copy to clipboard on generate
+    fn handle_generate(result_field: TextContent) -> Box<dyn Fn(&mut Cursive)> {
+        Box::new(
+            move |cursive: &mut Cursive| -> () {
+                let data = cursive.user_data::<HashMap<&str, bool>>().expect("Error");
+                let pw = password::from_options(data);
+                result_field.set_content(pw);
+            }
+        )
+    }
 
     // generate column of checkboxes from state keys.
     let mut buttons = LinearLayout::vertical();
@@ -52,11 +61,20 @@ fn main() {
         .child(TextView::new("Exclude Similar Characters:"))
         .child(TextView::new("Include Ambiguous Characters:"));
 
-    let top_row = LinearLayout::horizontal().child(labels).child(buttons);
+    let checkboxes_row = LinearLayout::horizontal().child(labels).child(buttons);
+
+    let password_row = LinearLayout::horizontal()
+        .child(TextView::new_with_content(password_result_field.clone()))
+        .child(Button::new("Generate", handle_generate(password_result_field)));
+
+
+    let buttons_row = LinearLayout::horizontal()
+        .child(Button::new("Quit", |s| s.quit()));
 
     let layout = LinearLayout::vertical()
-        .child(top_row)
-        .child(Button::new("Quit", |s| s.quit()));
+        .child(checkboxes_row)
+        .child(password_row)
+        .child(buttons_row);
 
     // Creates a dialog with a single "Quit" button
     siv.add_layer(Dialog::around(layout).title("Pukka - Password Generator"));
