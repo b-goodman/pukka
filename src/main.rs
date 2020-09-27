@@ -2,7 +2,17 @@ use cursive::views::{Button, Checkbox, Dialog, LinearLayout, TextContent, TextVi
 use cursive::Cursive;
 use std::collections::HashMap;
 
+extern crate clipboard;
+
+use clipboard::ClipboardProvider;
+use clipboard::ClipboardContext;
+
 mod password;
+
+fn copy(copy: String) -> () {
+    let mut ctx: ClipboardContext = ClipboardProvider::new().expect("ctx error");
+    ctx.set_contents(copy.to_owned()).expect("copy error");
+}
 
 fn main() {
     let mut siv = cursive::default();
@@ -38,7 +48,8 @@ fn main() {
             move |cursive: &mut Cursive| -> () {
                 let data = cursive.user_data::<HashMap<&str, bool>>().expect("Error");
                 let pw = password::from_options(data);
-                result_field.set_content(pw);
+                result_field.set_content(&pw);
+                copy(pw);
             }
         )
     }
